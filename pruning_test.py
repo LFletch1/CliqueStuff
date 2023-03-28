@@ -90,8 +90,15 @@ def main():
     #             ("Email-Enron.txt", "\t"))
                 # ("musae_facebook_edges.csv", ","))
                 # ("musae_DE_edges.csv", ","),
-    filenames = [("musae_PTBR_edges.csv", ","),("musae_RU_edges.csv", ",")] #,
-    # filenames = [("musae_RU_edges.csv", ",")] #,
+    filenames = [("musae_PTBR_edges.csv", ","),
+                 ("musae_RU_edges.csv", ","),
+                 ("musae_ENGB_edges.csv", ","),
+                 ("musae_ES_edges.csv", ","),
+                 ("musae_FR_edges.csv", ","),
+                 ("musae_FR_edges.csv", ","),
+                 ("Email-Enron.txt", "\t"),
+                 ("musae_DE_edges.csv", ","),
+                 ("facebook_combined.txt", " ")]
     # filenames = [("musae_ES_edges.csv", ",")] #,
                 # ("musae_ENGB_edges.csv", ","),
                 # ("musae_ES_edges.csv", ","),
@@ -99,7 +106,7 @@ def main():
                 # ("musae_RU_edges.csv", ","),
     # for filename_delim in filenames:
     #     compare_colorings(filename_delim[0], filename_delim[1])
-    clique_size = 4
+    clique_size = 7
     colorings_to_test = 100
     dir_name = "graphs/"
     for filename in filenames:
