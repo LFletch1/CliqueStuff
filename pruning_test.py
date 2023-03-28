@@ -41,7 +41,6 @@ def colors_heuristic_test(DODGr, G, k):
         k - size of cliques being listed.
     '''
     total_combos = 0
-    total_combos_pruned = 0
     total_nodes = 0
     num_of_colorings = 0
     for edge in DODGr.edges():
@@ -63,18 +62,12 @@ def colors_heuristic_test(DODGr, G, k):
         new_sorted_neigh = [i for i in range(len(sorted_neighbors))]
         for combo in combinations(new_sorted_neigh, k-1):
             total_combos += 1
-            # color_prune = False
             for col in range(num_of_colorings): # Number of colors, hard coded for now
                 col_list = [neighbor_colors[col][c] for c in combo]
                 if len(col_list) != len(set(col_list)):
-                    # color_prune = True
                     combos_pruned_by_number_of_colors[col+1] += 1
                     break
-            # if color_prune:
-            #     total_combos_pruned += 1
     return combos_pruned_by_number_of_colors, total_combos
-    print(f"Total combinations of {k-1} to be checked: {total_combos}")
-    print(f"Total combinations pruned from {num_of_colorings} colorings: {total_combos_pruned}")
 
 
 def strategy_smallest_first(G, colors):
@@ -117,24 +110,22 @@ def main():
         DODGr = get_DODGr(G)
         max_degree_G = max([v[1] for v in G.degree()])
         max_degree_DODGr = max([v[1] for v in DODGr.out_degree()])
-        print(f"Maximum degree in original graph: {max_degree_G}")
-        print(f"Maximum degree in DODGr: {max_degree_DODGr}")
+        print(f"Largest degree in original graph: {max_degree_G}")
+        print(f"Largest degree in DODGr: {max_degree_DODGr}")
         for k in range(3,clique_size+1):
             DODGr = get_DODGr(G) # Have to recreate DODGr each time so that colors don't build
             print(f"Clique size k = {k}") 
             color_DODGr(G, DODGr, colorings_to_test)
             prune_by_color, total_combos = colors_heuristic_test(DODGr, G, k)
-            # print(len(prune_by_color))
             percentage_prune = [x/total_combos for x in prune_by_color]
             percent_pruned = prefix_sum(percentage_prune)
-            # print(percent_pruned)
             plt.plot([x for x in range(colorings_to_test+2)], percent_pruned, label=k)
         print("-" * 80)
         plt.legend()
         plt.title(f"Color pruning of cliques on {graph_name} graph")
         plt.xlabel("Number of colorings")
         plt.ylabel("Percentage of k-1 combos pruned")
-        plt.show()
+        plt.savefig(f"charts/{graph_name}_color_pruning.png")
             
 
 if __name__ == "__main__":
