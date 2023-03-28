@@ -72,7 +72,7 @@ def colors_heuristic_test(DODGr, G, k):
                     break
             # if color_prune:
             #     total_combos_pruned += 1
-    return combos_pruned_by_number_of_colors
+    return combos_pruned_by_number_of_colors, total_combos
     print(f"Total combinations of {k-1} to be checked: {total_combos}")
     print(f"Total combinations pruned from {num_of_colorings} colorings: {total_combos_pruned}")
 
@@ -89,8 +89,7 @@ def prefix_sum(nums_list):
     nums_list
     for i in range(1,len(nums_list)):
         new_list[i] = new_list[i-1] + nums_list[i]
-    print(nums_list)
-    print(new_list)
+    return new_list
 
 
 def main():
@@ -108,21 +107,35 @@ def main():
     # for filename_delim in filenames:
     #     compare_colorings(filename_delim[0], filename_delim[1])
     clique_size = 4
-    colorings_to_test = 5
+    colorings_to_test = 100
+    dir_name = "graphs/"
     for filename in filenames:
+        graph_name = filename[0].split(".")[0]
+        print("-" * 80)
+        G = nx.read_edgelist(dir_name + filename[0], delimiter=filename[1], nodetype=int)
+        print(f"Pruning test for {graph_name} graph") 
+        DODGr = get_DODGr(G)
+        max_degree_G = max([v[1] for v in G.degree()])
+        max_degree_DODGr = max([v[1] for v in DODGr.out_degree()])
+        print(f"Maximum degree in original graph: {max_degree_G}")
+        print(f"Maximum degree in DODGr: {max_degree_DODGr}")
         for k in range(3,clique_size+1):
-            G = nx.read_edgelist(filename[0], delimiter=filename[1], nodetype=int)
-            DODGr = get_DODGr(G)
-            # max_degree_G = max([v[1] for v in G.degree()])
-            # max_degree_DODGr = max([v[1] for v in DODGr.out_degree()])
-            # print(sorted(DODGr.out_degree, key=lambda x: x[1], reverse=False)[-10:])
-            DODGr = get_DODGr(G)
-            print("-" * 80)
-            print(f"Clique Size: {k}") 
+            DODGr = get_DODGr(G) # Have to recreate DODGr each time so that colors don't build
+            print(f"Clique size k = {k}") 
             color_DODGr(G, DODGr, colorings_to_test)
-            prune_by_color = colors_heuristic_test(DODGr, G, k)
-            # print(prune_by_color)
-            prefix_sum(prune_by_color)
+            prune_by_color, total_combos = colors_heuristic_test(DODGr, G, k)
+            # print(len(prune_by_color))
+            percentage_prune = [x/total_combos for x in prune_by_color]
+            percent_pruned = prefix_sum(percentage_prune)
+            # print(percent_pruned)
+            plt.plot([x for x in range(colorings_to_test+2)], percent_pruned, label=k)
+        print("-" * 80)
+        plt.legend()
+        plt.title(f"Color pruning of cliques on {graph_name} graph")
+        plt.xlabel("Number of colorings")
+        plt.ylabel("Percentage of k-1 combos pruned")
+        plt.show()
+            
 
 if __name__ == "__main__":
     main()
