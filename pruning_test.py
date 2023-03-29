@@ -86,10 +86,7 @@ def prefix_sum(nums_list):
 
 
 def main():
-    # filenames = [("facebook_combined.txt", " ")]
-    #             ("Email-Enron.txt", "\t"))
                 # ("musae_facebook_edges.csv", ","))
-                # ("musae_DE_edges.csv", ","),
     filenames = [("musae_PTBR_edges.csv", ","),
                  ("musae_RU_edges.csv", ","),
                  ("musae_ENGB_edges.csv", ","),
@@ -99,15 +96,8 @@ def main():
                  ("Email-Enron.txt", "\t"),
                  ("musae_DE_edges.csv", ","),
                  ("facebook_combined.txt", " ")]
-    # filenames = [("musae_ES_edges.csv", ",")] #,
-                # ("musae_ENGB_edges.csv", ","),
-                # ("musae_ES_edges.csv", ","),
-                # ("musae_FR_edges.csv", ","),
-                # ("musae_RU_edges.csv", ","),
-    # for filename_delim in filenames:
-    #     compare_colorings(filename_delim[0], filename_delim[1])
-    clique_size = 7
-    colorings_to_test = 100
+    clique_size = 6
+    colorings_to_test = 20
     dir_name = "graphs/"
     for filename in filenames:
         graph_name = filename[0].split(".")[0]
@@ -133,6 +123,7 @@ def main():
         plt.xlabel("Number of colorings")
         plt.ylabel("Percentage of k-1 combos pruned")
         plt.savefig(f"charts/{graph_name}_color_pruning.png")
+        plt.clf()
             
 
 if __name__ == "__main__":
