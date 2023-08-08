@@ -8,14 +8,14 @@ def get_DODGr(G):
     for edge in G.edges():
         # print(edge)
         if G.degree[edge[0]] > G.degree[edge[1]]:
-            DODGr.add_edge(edge[1], edge[0], colorings=[]) # Edge from lesser degree node to greater degree node
+            DODGr.add_edge(edge[1], edge[0], colorings=[], weight=0) # Edge from lesser degree node to greater degree node
         elif G.degree[edge[0]] < G.degree[edge[1]]:
-            DODGr.add_edge(edge[0], edge[1], colorings=[]) # Edge from lesser degree node to greater degree node
+            DODGr.add_edge(edge[0], edge[1], colorings=[], weight=0) # Edge from lesser degree node to greater degree node
         else: # Edges are equal, tie break based on node label
-            if edge[0] > edge[1]:
-                DODGr.add_edge(edge[0], edge[1], colorings=[])
+            if edge[0] < edge[1]:
+                DODGr.add_edge(edge[0], edge[1], colorings=[], weight=0)
             else:
-                DODGr.add_edge(edge[1], edge[0], colorings=[])
+                DODGr.add_edge(edge[1], edge[0], colorings=[], weight=0)
     return DODGr
 
 def color_DODGr(G, DODGr, c):
@@ -109,6 +109,7 @@ def main():
         max_degree_DODGr = max([v[1] for v in DODGr.out_degree()])
         print(f"Largest degree in original graph: {max_degree_G}")
         print(f"Largest degree in DODGr: {max_degree_DODGr}")
+        continue
         for k in range(3,clique_size+1):
             DODGr = get_DODGr(G) # Have to recreate DODGr each time so that colors don't build
             print(f"Clique size k = {k}") 
