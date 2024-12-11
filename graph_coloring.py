@@ -1,142 +1,120 @@
 import networkx as nx
-import statistics
+from itertools import combinations
 import matplotlib.pyplot as plt
+import random
 
-def strategy_smallest_first(G, colors):
-    """Returns a list of the nodes of ``G`` in decreasing order by
-    degree.
-    ``G`` is a NetworkX graph. ``colors`` is ignored.
 
-    """
-    return sorted(G, key=G.degree) # sorts least to greatest
-
-def compare_colorings(f, delim=" "):
-    G = nx.read_edgelist(f, delimiter=delim, nodetype=int)
-    print(G.number_of_nodes()) 
-    print(G.number_of_edges())
-    coloring_strategies = ('largest_first',
-                            'random_sequential',
-                            strategy_smallest_first,
-                            )
-    # 'smallest_last'
-    # 'connected_sequential_bfs',
-    # 'connected_sequential'
-    # 'independent_set',
-    # 'DSATUR'
-    for strat in coloring_strategies:
-        coloring = nx.greedy_color(G, strategy=strat)
-        highest_color = 0
-        for value in coloring.values():
-            if value > highest_color:
-                highest_color = value
-        print(f"Graph {f} using {strat} strategy colored using {highest_color + 1} colors") # highest color + 1 will equate to total colors used
-
-def minimize_chromatic_degree(filename, delim=" ", random_colorings=100, low_deg_first_coloring = True, high_deg_first_coloring = True):
-    '''Using a random ordering for a coloring, continuously find lower chromatic_degree of each node'''
-    G = nx.read_edgelist(filename, delimiter=delim, nodetype=int)
-    node_chromatic_degree = {n : float('inf') for n in G.nodes()}
-
-    if low_deg_first_coloring:
-        coloring = nx.greedy_color(G, strategy=strategy_smallest_first) # Equivalent to DAG Coloring
-        for v in G.nodes():
-            neighbor_colors = []
-            for n in G.neighbors(v):
-                neighbor_colors.append(coloring[n])
-            chromatic_deg = len(list(dict.fromkeys(neighbor_colors)))
-            if chromatic_deg < node_chromatic_degree[v]:
-                node_chromatic_degree[v] = chromatic_deg
+# Goal is to produce a diverse set of colorings without altering the vertex ordering
+# for which the coloring is based on
     
-    if high_deg_first_coloring:
-        coloring = nx.greedy_color(G, strategy='largest_first')
-        for v in G.nodes():
-            neighbor_colors = []
-            for n in G.neighbors(v):
-                neighbor_colors.append(coloring[n])
-            chromatic_deg = len(list(dict.fromkeys(neighbor_colors)))
-            if chromatic_deg < node_chromatic_degree[v]:
-                node_chromatic_degree[v] = chromatic_deg
-
-
-    for _ in range(random_colorings):
-        coloring = nx.greedy_color(G, strategy='random_sequential')
-        for v in G.nodes():
-            neighbor_colors = []
-            for n in G.neighbors(v):
-                neighbor_colors.append(coloring[n])
-            chromatic_deg = len(list(dict.fromkeys(neighbor_colors)))
-            if chromatic_deg < node_chromatic_degree[v]:
-                node_chromatic_degree[v] = chromatic_deg
-    
-    avg_chromatic_deg = sum(node_chromatic_degree.values()) / len(node_chromatic_degree.values())
-    max_chromatic_deg = max(node_chromatic_degree.values())
-    median_chromatic_deg = statistics.median_high(node_chromatic_degree.values())
-
-    print("-"*10, filename, "-"*10)
-    print("Avg Chromatic Degree:", avg_chromatic_deg)
-    print("Max Chromatic Degree:", max_chromatic_deg)
-    print("Median Chromatic Degree:", median_chromatic_deg)
-    print("-"*50)
-
-    return avg_chromatic_deg, max_chromatic_deg, median_chromatic_deg
-
-
-def main():
-    filenames = (("facebook_combined.txt", " "),
-                ("Email-Enron.txt", "\t"),
-                ("musae_facebook_edges.csv", ","))
-                # ("musae_DE_edges.csv", ","),
-                # ("musae_PTBR_edges.csv", ","),
-                # ("musae_ENGB_edges.csv", ","),
-                # ("musae_ES_edges.csv", ","),
-                # ("musae_FR_edges.csv", ","),
-                # ("musae_RU_edges.csv", ","),
-    # for filename_delim in filenames:
-    #     compare_colorings(filename_delim[0], filename_delim[1])
-
-    combos = [(i, False, False) for i in range(10,51,10)] + [(i, True, True) for i in range(0,51,10)]
-    print(len(combos))
-    labels = []
-    for combo in combos:
-        s = str(combo[0])
-        if combo[1]:
-            s += "T"
+def get_random_init_coloring(G, vertex_order, init_range):
+    '''If a vertex does not have any neighbors that have been colored yet
+      initialize it as a random in a select range (colors 1 - 5), color the other
+      vertices greedily'''
+    colors = {}
+    max_degree = max(dict(G.degree()).values())
+    for u in vertex_order:
+        # Set to keep track of colors of neighbors
+        nbr_colors = {colors[v] for v in G[u] if v in colors}
+        if len(nbr_colors) == 0:
+            colors[u] = random.randint(0, init_range)
         else:
-            s += "F"
-        if combo[2]:
-            s += "T"
+            # Find the first unused color.
+            for color in range(max_degree):
+                if color not in nbr_colors:
+                    break
+            colors[u] = color
+            if color > max_degree-1:
+                print("Color shouldn't be greater than max degree")
+                exit()
+    return colors
+
+
+def get_random_relaxed_coloring(G, vertex_order, n):
+    '''Still color vertices based on a vertex ordering
+      but allow vertices to not always act the greediest.
+      For example say none of vertex u's neighbors are colored 
+      1, 3, and 6, then we could allow u to randomly pick 1 and 3,
+      maybe flip a coin on being greedy?'''
+    colors = {}
+    max_degree = max(dict(G.degree()).values())
+    for u in vertex_order:
+        # Set to keep track of colors of neighbors
+        nbr_colors = [colors[v] for v in G[u] if v in colors]
+        if len(nbr_colors) == 0:
+            colors[u] = 0
         else:
-            s += "F"
-        labels.append(s)
-    print(len(labels))
-    ax = plt.axes()
-    ax.set_xticklabels(labels)
-    for filename_delim in filenames:
-        avg = []
-        for combo in combos:
-            avg_c_deg, max_c_deg, median_c_deg =minimize_chromatic_degree(filename_delim[0], filename_delim[1], combo[0], combo[1], combo[2])
-            avg.append(avg_c_deg)
-        plt.plot(avg, label = filename_delim[0])
+            sorted_nbr_colors = sorted(nbr_colors)
+            greedy_options = [0] * n
+            i = 0
+            for color in range(max_degree): 
+                if color not in nbr_colors:
+                    greedy_options[i] = color
+                    i += 1
+                    if i == n:
+                        break
+            colors[u] = random.choice(greedy_options[:i])
+            if color > max_degree-1:
+                print("Color shouldn't be greater than max degree")
+                exit()
+    return colors
+     
 
-    plt.xticks([x for x in range(len(combos))])
-    plt.xlabel("Coloring Combination")
-    plt.legend()
-    plt.title("Avg. Chromatic Degree with Different Coloring Method Combinations")
-    plt.show()
+def get_propogate_highest_coloring(G, vertex_order): # If ordering is the same, should provide same coloring
+    '''Amongst my colored neighbors, find the heighest color k then color
+      yourself k + 1'''
+    colors = {}
+    for u in vertex_order:
+        # Set to keep track of colors of neighbors
+        nbr_colors = {colors[v] for v in G[u] if v in colors}
+        if len(nbr_colors) == 0:
+            colors[u] = 0
+        else:
+          # Select color one larger than the largest neighbor color
+          color = max(nbr_colors) + 1
+          colors[u] = color
+    return colors
 
-    ax = plt.axes()
-    ax.set_xticklabels(labels)
-    for filename_delim in filenames:
-        max = []
-        for combo in combos:
-            avg_c_deg, max_c_deg, median_c_deg =minimize_chromatic_degree(filename_delim[0], filename_delim[1], combo[0], combo[1], combo[2])
-            max.append(max_c_deg)
-        plt.plot([x for x in range(len(combos))], max, label = filename_delim[0])
-    plt.xticks([x for x in range(len(combos))])
-    plt.xlabel("Coloring Combination")
-    plt.ylabel("Max. Chromatic Degree")
-    plt.legend()
-    plt.title("Max. Chromatic Degree with Different Coloring Method Combinations")
-    plt.show()
+# def color_DODGr(G, DODGr, c, strategy, vertex_order, arg):
+def get_multiple_colorings(G, c, strategy, vertex_order, arg):
+    '''
+        Color DODGr with smallest first strategy and for each coloring after that use a random coloring.
+        strategy 1 = get_random_init_coloring
+    ''' 
+    vertex_multi_colors = {u : [] for u in G.nodes()}
+    # DODGr_ordering = get_DODGr_out_degree_order(DODGr)
+    for i in range(c): # number of random colorings
+        if strategy == 0:
+            coloring = nx.greedy_color(G, strategy='random_sequential')
+        elif strategy == 1:
+            coloring = get_random_init_coloring(G, vertex_order, arg)
+        elif strategy == 2:
+            coloring = get_random_relaxed_coloring(G, vertex_order, arg)
+        elif strategy == 3:
+            coloring = get_propogate_highest_coloring(G, vertex_order) # If ordering is the same, should provide same coloring
+        elif strategy == 4:
+            coloring = nx.greedy_color(G, strategy='largest_first')     
+        for u in G.nodes():
+            vertex_multi_colors[u].append(coloring[u]) 
 
-if __name__ == "__main__":
-    main()
+    return vertex_multi_colors
+
+def colors_pruning_test(DODGr, k, colorings, num_of_colorings):
+    '''
+        k - size of cliques being evaluated for pruning savings.
+    '''
+    total_combos = 0
+    combos_pruned_by_number_of_colors = [0] * (num_of_colorings + 1)
+    for u in DODGr.nodes():
+        neighbors = [v for v in DODGr.neighbors(u)]
+        for combo in combinations(neighbors, k-1):
+            total_combos += 1
+            for i in range(num_of_colorings):
+                # colorings[combo[0]][i] == combo
+                # for v in combo:
+                #     print(colorings[v])
+                colors_of_combo = [colorings[v][i] for v in combo]
+                if len(colors_of_combo) != len(set(colors_of_combo)):
+                    combos_pruned_by_number_of_colors[i+1] += 1
+                    break
+    return combos_pruned_by_number_of_colors, total_combos
