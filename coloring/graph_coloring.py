@@ -9,7 +9,7 @@ import random
     
 def get_random_init_coloring(G, vertex_order, init_range):
     '''If a vertex does not have any neighbors that have been colored yet
-      initialize it as a random in a select range (colors 1 - 5), color the other
+      initialize it as a random color in a select range (colors 1 - 5), color the other
       vertices greedily'''
     colors = {}
     max_degree = max(dict(G.degree()).values())
@@ -32,10 +32,9 @@ def get_random_init_coloring(G, vertex_order, init_range):
 
 def get_random_relaxed_coloring(G, vertex_order, n):
     '''Still color vertices based on a vertex ordering
-      but allow vertices to not always act the greediest.
+      but do no always select the greediest color.
       For example say none of vertex u's neighbors are colored 
-      1, 3, and 6, then we could allow u to randomly pick 1 and 3,
-      maybe flip a coin on being greedy?'''
+      1, 3, and 6, then we could allow u to randomly pick 1 and 3'''
     colors = {}
     max_degree = max(dict(G.degree()).values())
     for u in vertex_order:
@@ -44,7 +43,6 @@ def get_random_relaxed_coloring(G, vertex_order, n):
         if len(nbr_colors) == 0:
             colors[u] = 0
         else:
-            sorted_nbr_colors = sorted(nbr_colors)
             greedy_options = [0] * n
             i = 0
             for color in range(max_degree): 
@@ -75,6 +73,34 @@ def get_propogate_highest_coloring(G, vertex_order): # If ordering is the same, 
           colors[u] = color
     return colors
 
+def get_dynamic_relaxed_greedy_colorings(G, c, vertex_order, relax_params):
+
+    vertex_multi_colors = {u : [] for u in G.nodes()}
+    coloring = get_random_relaxed_coloring(G, vertex_order, 1)
+    for u in G.nodes():
+        vertex_multi_colors[u].append(coloring[u]) 
+
+    total_colorings = 1   
+    colors_per_param = c-1 // len(relax_params)
+    assert colors_per_param > 0, "Must be more colorings that relax parameters!"
+
+    for r in relax_params:  
+        if r == relax_params[-1]: # Do last param until required number of colorings met
+            while total_colorings < c:
+                coloring = get_random_relaxed_coloring(G, vertex_order, r)
+                for u in G.nodes():
+                    vertex_multi_colors[u].append(coloring[u]) 
+                total_colorings += 1
+        else:
+            for i in range(colors_per_param):
+                coloring = get_random_relaxed_coloring(G, vertex_order, r)
+                for u in G.nodes():
+                    vertex_multi_colors[u].append(coloring[u]) 
+                total_colorings += 1
+
+    return vertex_multi_colors
+
+
 # def color_DODGr(G, DODGr, c, strategy, vertex_order, arg):
 def get_multiple_colorings(G, c, strategy, vertex_order, arg):
     '''
@@ -82,7 +108,6 @@ def get_multiple_colorings(G, c, strategy, vertex_order, arg):
         strategy 1 = get_random_init_coloring
     ''' 
     vertex_multi_colors = {u : [] for u in G.nodes()}
-    # DODGr_ordering = get_DODGr_out_degree_order(DODGr)
     for i in range(c): # number of random colorings
         if strategy == 0:
             coloring = nx.greedy_color(G, strategy='random_sequential')
@@ -94,27 +119,54 @@ def get_multiple_colorings(G, c, strategy, vertex_order, arg):
             coloring = get_propogate_highest_coloring(G, vertex_order) # If ordering is the same, should provide same coloring
         elif strategy == 4:
             coloring = nx.greedy_color(G, strategy='largest_first')     
+        elif strategy == 5:
+            if i == 0:
+                coloring = nx.greedy_color(G, strategy='largest_first')     
+            if i == 1:
+                coloring = get_propogate_highest_coloring(G, vertex_order) # If ordering is the same, should provide same coloring
+            elif i in range(2,17):
+                coloring = nx.greedy_color(G, strategy='random_sequential')
+            elif i in range(17,34):
+                coloring = get_random_init_coloring(G, vertex_order, 5)
+            elif i in range(34, c):
+                coloring = get_random_relaxed_coloring(G, vertex_order, 5)
+
         for u in G.nodes():
             vertex_multi_colors[u].append(coloring[u]) 
 
     return vertex_multi_colors
 
-def colors_pruning_test(DODGr, k, colorings, num_of_colorings):
+
+def get_strategy_name(i):
+    if i == 0:
+        return "random ordering"
+    elif i == 1:
+        return "random initialization"
+    elif i == 2:
+        return "relaxed greedy"
+    elif i == 3:
+        return "propogate hightest"
+    elif i == 4:
+        return "largest degree first"
+    elif i == 5:
+        return "ensemble"
+
+
+def colors_pruning_test(G, DODGr, k, colorings, num_of_colorings):
     '''
         k - size of cliques being evaluated for pruning savings.
     '''
-    total_combos = 0
+    total_open_wedges = 0
     combos_pruned_by_number_of_colors = [0] * (num_of_colorings + 1)
     for u in DODGr.nodes():
-        neighbors = [v for v in DODGr.neighbors(u)]
-        for combo in combinations(neighbors, k-1):
-            total_combos += 1
-            for i in range(num_of_colorings):
-                # colorings[combo[0]][i] == combo
-                # for v in combo:
-                #     print(colorings[v])
-                colors_of_combo = [colorings[v][i] for v in combo]
-                if len(colors_of_combo) != len(set(colors_of_combo)):
-                    combos_pruned_by_number_of_colors[i+1] += 1
-                    break
-    return combos_pruned_by_number_of_colors, total_combos
+        # neighbors = [v for v in DODGr.neighbors(u)]
+        sorted_neighbors = [n[0] for n in sorted(G.degree(DODGr.neighbors(u)), key = lambda x: x[1])]
+        for combo in combinations(sorted_neighbors, 2):
+            if combo[1] not in DODGr.neighbors(combo[0]): # Only works for triangle counting now
+                total_open_wedges += 1
+                for i in range(num_of_colorings):
+                    colors_of_combo = [colorings[v][i] for v in combo]
+                    if len(colors_of_combo) != len(set(colors_of_combo)):
+                        combos_pruned_by_number_of_colors[i+1] += 1
+                        break
+    return combos_pruned_by_number_of_colors, total_open_wedges

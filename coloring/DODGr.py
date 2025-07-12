@@ -26,9 +26,7 @@ def get_DODGr_in_degree_order(DODGr):
 def get_DODGr_order(DODGr):
     order = []
     tmp_graph = DODGr.copy()
-    # print(nx.find_cycle(tmp_graph, orientation="original"))
     while tmp_graph.number_of_nodes() > 0:
-        # print(tmp_graph.number_of_nodes())
         tmp_nodes = [n for n in tmp_graph.nodes()]
         for n in tmp_nodes:
             if tmp_graph.in_degree(n) == 0:

@@ -2,22 +2,7 @@ import networkx as nx
 from itertools import combinations
 import matplotlib.pyplot as plt
 import random
-
-def get_DODGr(G):
-    '''Given an undirected graph return the Degree Ordered Directed Graph (DODGr)'''
-    DODGr = nx.DiGraph()
-    for edge in G.edges():
-        # print(edge)
-        if G.degree[edge[0]] > G.degree[edge[1]]:
-            DODGr.add_edge(edge[1], edge[0], colorings=[], weight=0) # Edge from lesser degree node to greater degree node
-        elif G.degree[edge[0]] < G.degree[edge[1]]:
-            DODGr.add_edge(edge[0], edge[1], colorings=[], weight=0) # Edge from lesser degree node to greater degree node
-        else: # Edges are equal, tie break based on node label
-            if edge[0] < edge[1]:
-                DODGr.add_edge(edge[0], edge[1], colorings=[], weight=0)
-            else:
-                DODGr.add_edge(edge[1], edge[0], colorings=[], weight=0)
-    return DODGr
+from DODGr import *
 
 # Goal is to produce a diverse set of colorings without altering the vertex ordering
 # for which the coloring is based on
@@ -50,6 +35,7 @@ def get_random_relaxed_coloring(G, vertex_order):
       For example say none of vertex u's neighbors are colored 
       1, 3, and 6, then we could allow u to randomly pick 1 and 3,
       maybe flip a coin on being greedy?'''
+    
 
 def propogate_highest_coloring(G, vertex_order): # If ordering is the same, should provide same coloring
     '''Amongst my colored neighbors, find the heighest color k then color
@@ -73,7 +59,8 @@ def color_DODGr(G, DODGr, c, strategy=1):
         strategy 1 = get_random_init_coloring
     ''' 
     coloring = {}
-    DODGr_ordering = get_DODGr_out_degree_order(DODGr)
+    # DODGr_ordering = get_DODGr_out_degree_order(DODGr)
+    DODGr_ordering = get_DODGr_order(DODGr)
     for i in range(c): # number of random colorings
         if strategy == 0:
           coloring = nx.greedy_color(G, strategy='random_sequential')
