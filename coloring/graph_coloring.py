@@ -71,7 +71,8 @@ def get_propogate_highest_coloring(G, vertex_order): # If ordering is the same, 
           # Select color one larger than the largest neighbor color
           color = max(nbr_colors) + 1
           colors[u] = color
-    return colors
+    return colors 
+
 
 def get_dynamic_relaxed_greedy_colorings(G, c, vertex_order, relax_params):
 
@@ -120,6 +121,8 @@ def get_multiple_colorings(G, c, strategy, vertex_order, arg):
         elif strategy == 4:
             coloring = nx.greedy_color(G, strategy='largest_first')     
         elif strategy == 5:
+            coloring = get_limited_coloring(G, vertex_order, arg)
+        elif strategy == 6:
             if i == 0:
                 coloring = nx.greedy_color(G, strategy='largest_first')     
             if i == 1:

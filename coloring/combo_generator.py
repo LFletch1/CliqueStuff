@@ -37,11 +37,14 @@ class combo_generator:
 
         if self.combos_generated == 0: # Generate first combo
             self.combos_generated += 1
+            # print("a", len(self.list))
+            # print("b", self.c)
             return [self.list[i] for i in range(self.c)]
 
         if not valid_last_combo:
             # print("LAST COMBO IS INVALID, combo = ", self.indices)
-            assert combo_idx1 < combo_idx2, "First index needs to be less than the second"
+            if (combo_idx1 < combo_idx2):
+                assert combo_idx1 < combo_idx2, "First index needs to be less than the second"
             p = combo_idx2
             while self.indices[p] == len(self.list) - self.c + p:
                 p -= 1
@@ -64,49 +67,52 @@ class combo_generator:
         else:
             return False
 
-combo_length = 4
-l = [i for i in range(10)]
+def main():
+    combo_length = 4
+    l = [i for i in range(10)]
 
-cg = combo_generator(combo_length, l)
+    cg = combo_generator(combo_length, l)
 
-invalid_pairs = [(0,5), (1,9), (2,4), (3,7), (4,5), (5,6), (5,7), (6,9)]
+    invalid_pairs = [(0,5), (1,9), (2,4), (3,7), (4,5), (5,6), (5,7), (6,9)]
 
-invalid_combos = 0
-combo = cg.get_next_combo(True, 0, 0)
-while combo:
-    # print("COMBO GENERATED: ", combo)
-    combo_valid = True
-    idx1 = 0
-    idx2 = 0
-    for i in range(len(combo)):
-        for j in range(i, len(combo)):
-            if (combo[i], combo[j]) in invalid_pairs:
-                invalid_combos += 1
-                idx1 = i
-                idx2 = j
-                combo_valid = False
-                break 
-        if not combo_valid:
-            break
+    invalid_combos = 0
+    combo = cg.get_next_combo(True, 0, 0)
+    while combo:
+        # print("COMBO GENERATED: ", combo)
+        combo_valid = True
+        idx1 = 0
+        idx2 = 0
+        for i in range(len(combo)):
+            for j in range(i, len(combo)):
+                if (combo[i], combo[j]) in invalid_pairs:
+                    invalid_combos += 1
+                    idx1 = i
+                    idx2 = j
+                    combo_valid = False
+                    break 
+            if not combo_valid:
+                break
 
-    combo = cg.get_next_combo(combo_valid, idx1, idx2)
+        combo = cg.get_next_combo(combo_valid, idx1, idx2)
 
-print("Combos Generated: ", cg.combos_generated)
-print("Invalid Combos: ", invalid_combos)
-print("Valid Combos: ", cg.combos_generated - invalid_combos)
+    print("Combos Generated: ", cg.combos_generated)
+    print("Invalid Combos: ", invalid_combos)
+    print("Valid Combos: ", cg.combos_generated - invalid_combos)
 
-valid_combos = 0
-for combo in combinations(l, combo_length):
-    valid_combo = True
-    for i in range(len(combo)):
-        for j in range(i, len(combo)):
-            if (combo[i], combo[j]) in invalid_pairs:
-                valid_combo = False
-                break 
-        if not valid_combo:
-            break
-    if valid_combo:
-        valid_combos += 1
+    valid_combos = 0
+    for combo in combinations(l, combo_length):
+        valid_combo = True
+        for i in range(len(combo)):
+            for j in range(i+1, len(combo)):
+                if (combo[i], combo[j]) in invalid_pairs:
+                    valid_combo = False
+                    break 
+            if not valid_combo:
+                break
+        if valid_combo:
+            valid_combos += 1
 
-print("Valid combos: ", valid_combos)
+    print("Valid combos: ", valid_combos)
 
+if __name__ == "__main__":
+    main()
