@@ -74,6 +74,51 @@ def get_propogate_highest_coloring(G, vertex_order): # If ordering is the same, 
     return colors 
 
 
+def get_mis_coloring(G, vertex_order, p):
+
+    colors = {}
+    independent_set_size = 0
+    GRAY_COLOR = 255
+    # nbr_in_mis = {v : False for v in G.nodes()} 
+    mis = {v : False for v in G.nodes()} 
+    # max_degree = max(dict(G.degree()).values())
+    for u in vertex_order:
+        # Set to keep track of colors of neighbors
+        nbr_colors = [colors[v] for v in G[u] if v in colors]
+        nbrs_in_mis = [mis[v] for v in G[u]]
+
+        if True in nbrs_in_mis:
+            found_color = False
+            for color in range(GRAY_COLOR): 
+                if color not in nbr_colors:
+                    colors[u] = color
+                    found_color = True
+                    break   
+            if not found_color:
+                colors[u] = GRAY_COLOR
+            
+        elif (random.random() < p):
+            # add u to mis and have its neighbors color greedily
+            mis[u] = True
+            colors[u] = GRAY_COLOR
+            independent_set_size += 1
+        else:
+            colors[u] = GRAY_COLOR
+            # found_color = False
+            # for color in range(GRAY_COLOR): 
+            #     if color not in nbr_colors:
+            #         colors[u] = color
+            #         found_color = True
+            #         break   
+            # if not found_color:
+            #     colors[u] = GRAY_COLOR
+    print(f"Independent Set Size: {independent_set_size}")
+    # print(colors)
+    # exit()
+    return colors
+
+
+
 def get_dynamic_relaxed_greedy_colorings(G, c, vertex_order, relax_params):
 
     vertex_multi_colors = {u : [] for u in G.nodes()}
@@ -121,7 +166,7 @@ def get_multiple_colorings(G, c, strategy, vertex_order, arg):
         elif strategy == 4:
             coloring = nx.greedy_color(G, strategy='largest_first')     
         elif strategy == 5:
-            coloring = get_limited_coloring(G, vertex_order, arg)
+            coloring = get_mis_coloring(G, vertex_order, arg)
         elif strategy == 6:
             if i == 0:
                 coloring = nx.greedy_color(G, strategy='largest_first')     
